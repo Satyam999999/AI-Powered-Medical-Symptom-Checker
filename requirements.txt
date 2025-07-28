@@ -1,0 +1,8 @@
+pandas
+numpy
+scikit-learn
+flask
+python-dotenv
+google-generativeai
+joblib
+boto3

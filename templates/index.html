@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>�‍⚕️ AI Medical Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h2>Medical Symptom Checker</h2>
+            <p>Powered by AI</p>
+        </div>
+        <div id="chat-box" class="chat-box">
+            <div class="chat-message bot-message">
+                <p>Hello! I am an AI medical assistant. Please state your symptoms one by one. For example, type "itching".<br><br><strong>Disclaimer:</strong> This is for informational purposes only and is not a substitute for professional medical advice.</p>
+            </div>
+        </div>
+        <div class="chat-input">
+            <form id="message-form">
+                <input type="text" id="user-input" placeholder="Type a symptom..." autocomplete="off">
+                <button type="submit">Send</button>
+            </form>
+        </div>
+        <div class="symptom-area">
+             <p><strong>Your Symptoms:</strong> <span id="current-symptoms">None</span></p>
+             <button id="reset-button">Reset</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const chatBox = document.getElementById('chat-box');
+            const messageForm = document.getElementById('message-form');
+            const userInput = document.getElementById('user-input');
+            const currentSymptomsSpan = document.getElementById('current-symptoms');
+            const resetButton = document.getElementById('reset-button');
+
+            messageForm.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                const messageText = userInput.value.trim();
+                if (messageText === '') return;
+
+                appendMessage(messageText, 'user-message');
+                userInput.value = '';
+                
+                const thinkingDiv = appendMessage('<i>Thinking...</i>', 'bot-message thinking');
+
+                try {
+                    const response = await fetch('/predict', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: messageText }),
+                    });
+
+                    const data = await response.json();
+                    thinkingDiv.remove();
+                    appendMessage(data.answer, 'bot-message');
+                    currentSymptomsSpan.textContent = data.symptoms.length > 0 ? data.symptoms.join(', ') : 'None';
+                } catch (error) {
+                    thinkingDiv.remove();
+                    appendMessage('Sorry, something went wrong. Please try again.', 'bot-message');
+                    console.error('Fetch Error:', error);
+                }
+            });
+            
+            resetButton.addEventListener('click', async function() {
+                await fetch('/reset', { method: 'POST' });
+                chatBox.innerHTML = '<div class="chat-message bot-message"><p>Conversation reset. Please state your first symptom.</p></div>';
+                currentSymptomsSpan.textContent = 'None';
+            });
+
+            function appendMessage(text, className) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `chat-message ${className}`;
+                const p = document.createElement('p');
+                p.innerHTML = text; // Use innerHTML for HTML content like <br>
+                messageDiv.appendChild(p);
+                chatBox.appendChild(messageDiv);
+                chatBox.scrollTop = chatBox.scrollHeight;
+                return messageDiv;
+            }
+        });
+    </script>
+</body>
+</html>
